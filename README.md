@@ -8,8 +8,6 @@ HA 구성 및 부하분산을 고려하여 Keepalived, HAproxy가 설치되며, 
 
 ![architecture](docs/images/kubernetes_onprem_lab.png "architecture")
 
-## Differences from kubernetes-the-hard-way by Kelsey Hightower 
-
 * CNI는 Calico를 사용하였습니다.
 * On-premise의 환경에서 사용하는 LoadBalancer는 MetalLB로 구성하였습니다.
 * Kube-apiserver의 Endpoint 단일화를 위해 Master node에 Keepalived/Haproxy를 구성하였습니다.
@@ -20,7 +18,7 @@ HA 구성 및 부하분산을 고려하여 Keepalived, HAproxy가 설치되며, 
 * [containerd](https://github.com/containerd/containerd) v1.4.12
 * [etcd](https://github.com/coreos/etcd) v3.4.15
 * [calico](https://github.com/projectcalico/calico) v3.21.1
-* [MetalLB](https://metallb.universe.tf) v0.10.2
+* [MetalLB](https://metallb.universe.tf) v0.11.0
 * [FRRouting](https://frrouting.org/) v7.5.1
 
 ## Labs
