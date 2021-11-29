@@ -58,7 +58,7 @@ Runtime: go1.12.12
 `kubectl`은 Kubernetes API Server와 통신을 하기 위한 유틸리티입니다. 공식 릴리즈된 바이너리 버전을 설치하겠습니다.
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl
+wget https://storage.googleapis.com/kubernetes-release/release/v1.22.4/bin/linux/amd64/kubectl
 ```
 
 ```
@@ -71,7 +71,7 @@ sudo mv kubectl /usr/local/bin/
 
 ### Verification
 
-`kubectl`의 설치 버전이 1.21.0 이상인지 확인합니다.
+`kubectl`의 설치 버전이 1.22.4 이상인지 확인합니다.
 
 ```
 kubectl version --client
