@@ -1,4 +1,4 @@
-# Kubernetes The Hard Way Onprem
+# Kubernetes Onprem Labs
 
 이 가이드는 온프렘에서 K8S 테스트 환경을 구현하기 위한 방법을 다룹니다.
 HA 구성 및 부하분산을 고려하여 Keepalived, HAproxy가 설치되며, ETCD는 베어메탈에 바로 구성되는 방식으로 설정됩니다.
