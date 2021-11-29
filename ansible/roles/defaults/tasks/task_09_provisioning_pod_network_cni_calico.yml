@@ -1,0 +1,53 @@
+- name: Download calicoctl
+  get_url:
+    url: "https://github.com/projectcalico/calicoctl/releases/download/{{ v_calico_version }}/calicoctl"
+    dest: ~/
+  when:
+    - ('Controller' in group_names) or ('Client' in group_names)
+
+- name: Change mode calicoctl
+  file:
+    path: ~/calicoctl
+    mode: 0775
+  when:
+    - ('Controller' in group_names) or ('Client' in group_names)
+
+- name: Copy calicoctl to /usr/bin
+  copy:
+    src: "{{ v_user_home }}/calicoctl"
+    dest: /usr/bin/calicoctl
+    mode: 0775
+  become: true
+  when:
+    - ('Controller' in group_names) or ('Client' in group_names)
+
+- name: Download calico manifest
+  get_url:
+    url: https://docs.projectcalico.org/manifests/calico.yaml
+    dest: ~/k8s
+  when:
+    - "'Client' in group_names"
+
+- name: Replace calico yaml
+  shell: "sed -i 's|# - name: CALICO_IPV4POOL_CIDR|- name: CALICO_IPV4POOL_CIDR|g' ~/k8s/calico.yaml"
+  when:
+    - "'Client' in group_names"
+
+- name: Replace calico yaml
+  shell: 'sed -i ''s|#   value: "192.168.0.0/16"|  value: "{{ v_cluster_cidr }}"|g'' ~/k8s/calico.yaml'
+  when:
+    - "'Client' in group_names"
+
+- name: Apply calico
+  shell: "cd ~/k8s && kubectl apply -f calico.yaml"
+  when:
+    - "'Client' in group_names"
+
+- name: Wait calico Running
+  shell: "cd ~/k8s && kubectl -n kube-system get pods -o wide | grep calico | grep Running | wc -l"
+  register: calico_running
+  until: calico_running.stdout == "4"
+  retries: 1200
+  delay: 1
+  when:
+    - "'Client' in group_names"

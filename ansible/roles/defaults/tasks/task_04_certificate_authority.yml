@@ -1,0 +1,79 @@
+- name: Copy ca-config & csr files
+  connection: local
+  copy:
+    src: "{{ item }}"
+    dest: "~/k8s"
+  with_items:
+    - ca-config.json
+    - ca-csr.json
+    - etcd-csr.json
+  when:
+    - "'Client' in group_names "
+
+# Create CA certificate & key file
+- name: Create CA certificate & key file
+  connection: local
+  shell: "cd ~/k8s && cfssl gencert -initca ca-csr.json | cfssljson -bare ca"
+  when:
+    - "'Client' in group_names "
+
+- name: Check exists file ca-key.pem & ca.pem
+  connection: local
+  stat:
+    path: ~/k8s/{{ item }}
+  with_items:
+    - ca-key.pem
+    - ca.pem
+  register: check_ca_file_exists
+  when:
+    - "'Client' in group_names "
+  failed_when: check_ca_file_exists.stat.exists == False
+
+- name: Convert pem to crt
+  connection: local
+  shell: "openssl x509 -inform pem -in ~/k8s/ca.pem -out ~/k8s/ca.crt"
+  when:
+    - "'Client' in group_names "
+
+- name: Convert pem to key
+  connection: local
+  shell: "openssl rsa -inform pem -in ~/k8s/ca-key.pem -out ~/k8s/ca.key"
+  when:
+    - "'Client' in group_names "
+
+# Create etcd certificate & key file
+- name: Create etcd certificate authority files
+  connection: local
+  shell: "cd ~/k8s && cfssl gencert -ca=ca.crt \
+    -ca-key=ca.key \
+    -config=ca-config.json \
+    -profile=kubernetes \
+    -hostname=10.32.0.1,{{ v_etcd_hostname }} \
+    etcd-csr.json | cfssljson -bare etcd"
+  when:
+    - "'Client' in group_names "
+
+- name: Check exists file etcd-key.pem & etcd.pem
+  connection: local
+  stat:
+    path: ~/k8s/{{ item }}
+  with_items:
+    - etcd-key.pem
+    - etcd.pem
+  register: check_etcd_file_exists
+  when:
+    - "'Client' in group_names "
+  failed_when: check_etcd_file_exists.stat.exists == False
+
+# Deploy each nodes
+- name: Copy ca.crt ca.key etcd-key.pem etcd.pem to controllers
+  connection: local
+  shell: "cd ~/k8s && scp ca.crt ca.key etcd-key.pem etcd.pem {{ hostname }}:~/"
+  when:
+    - "'Controller' in group_names"
+
+- name: Copy ca.crt to workers
+  connection: local
+  shell: "cd ~/k8s && scp ca.crt {{ hostname }}:~/"
+  when:
+    - "'Worker' in group_names"

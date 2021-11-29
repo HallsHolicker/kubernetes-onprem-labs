@@ -1,0 +1,62 @@
+- name: Add FRRouting repo
+  dnf:
+    name: "https://rpm.frrouting.org/repo/frr-stable-repo-1-0.el8.noarch.rpm"
+    state: latest
+    disable_gpg_check: yes
+  become: true
+  when:
+    - "'Router' in group_names"
+
+- name: Install FRRouting
+  dnf:
+    name: ["frr", "frr-pythontools"]
+    state: latest
+  become: true
+  when:
+    - "'Router' in group_names"
+
+- name: Config FRRouting
+  copy:
+    src: frr.conf
+    dest: /etc/frr/frr.conf
+  become: true
+  when:
+    - "'Router' in group_names"
+
+- name: Replace frr daemons
+  replace:
+    path: /etc/frr/daemons
+    regexp: "^bgpd=no"
+    replace: "bgpd=yes"
+  become: true
+  when:
+    - "'Router' in group_names"
+
+- name: Replace frr daemons
+  replace:
+    path: /etc/frr/daemons
+    regexp: "^vtysh_enable=no"
+    replace: "vtysh_enable=yes"
+  become: true
+  when:
+    - "'Router' in group_names"
+
+- name: Replace frr daemons
+  replace:
+    path: /etc/frr/daemons
+    regexp: "^#MAX_FDS=1024"
+    replace: "MAX_FDS=1024"
+  become: true
+  when:
+    - "'Router' in group_names"
+
+# Restart FRRouting
+- name: Restart FRRouting
+  systemd:
+    name: frr
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: true
+  when:
+    - "'Router' in group_names"

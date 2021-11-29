@@ -1,0 +1,52 @@
+
+- name: Download metalLb manifest
+  get_url:
+    url: "{{ item }}"
+    dest: ~/k8s
+  with_items:
+    - "https://raw.githubusercontent.com/metallb/metallb/{{ v_metallb_version }}/manifests/namespace.yaml"
+    - "https://raw.githubusercontent.com/metallb/metallb/{{ v_metallb_version }}/manifests/metallb.yaml"
+  when:
+    - "'Client' in group_names"
+
+- name: Apply metallb namespace
+  shell: "cd ~/k8s && kubectl apply -f namespace.yaml"
+  when:
+    - "'Client' in group_names"
+
+- name: Apply metallb
+  shell: "cd ~/k8s && kubectl apply -f metallb.yaml"
+  when:
+    - "'Client' in group_names"
+
+- name: Check metallb secret
+  shell: " cd ~/k8s && kubectl -n metallb-system get secret memberlist | wc -l"
+  register: metallb_secret_exists
+  when:
+    - "'Client' in group_names"
+
+- name: Create metallb secret key
+  shell: "openssl rand -base64 128"
+  register: metallb_secret_key
+  when:
+    - "'Client' in group_names"
+    - metallb_secret_exists.stdout == "0"
+
+- name: Apply metallb secret
+  shell: "cd ~/k8s && kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey='{{ metallb_secret_key.stdout }}'"
+  when:
+    - "'Client' in group_names"
+    - metallb_secret_exists.stdout == "0"
+
+- name: Copy Metallb configmap
+  template:
+    src: metallb_configmap.j2
+    dest: ~/k8s/metallb_configmap
+  when:
+    - "'Client' in group_names"
+
+- name: Apply Metallb configmap
+  shell: "cd ~/k8s && kubectl create -f metallb_configmap"
+  when:
+    - "'Client' in group_names"
+

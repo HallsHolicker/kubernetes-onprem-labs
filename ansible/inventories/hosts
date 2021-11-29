@@ -1,0 +1,15 @@
+[Client]
+192.168.58.10 hostname=k8s-client ansible_user=vagrant
+
+[Controller]
+192.168.56.11 hostname=k8s-controller-1 ansible_user=vagrant
+192.168.56.12 hostname=k8s-controller-2 ansible_user=vagrant
+192.168.56.13 hostname=k8s-controller-3 ansible_user=vagrant
+
+[Worker]
+192.168.56.21 hostname=k8s-worker-1 ansible_user=vagrant
+192.168.56.22 hostname=k8s-worker-2 ansible_user=vagrant
+192.168.57.23 hostname=k8s-worker-3 ansible_user=vagrant
+
+[Router]
+192.168.56.100 hostname=k8s-router ansible_user=vagrant

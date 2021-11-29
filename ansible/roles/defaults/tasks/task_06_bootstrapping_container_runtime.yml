@@ -1,0 +1,83 @@
+- name: Setting module br_netfilter/overlay
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  become: yes
+  with_items:
+    - br_netfilter
+    - overlay
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Add Sysctl params
+  sysctl:
+    name: "{{ item }}"
+    value: "1"
+    sysctl_file: /etc/sysctl.conf
+    reload: yes
+  become: yes
+  with_items:
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.ipv4.ip_forward
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Install Required packages
+  dnf:
+    name: "{{ item }}"
+    state: present
+  become: yes
+  with_items:
+    - device-mapper-persistent-data
+    - lvm2
+    - iproute-tc
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Add Docker Repository
+  shell: "dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo"
+  become: yes
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Install containerd
+  dnf:
+    name: containerd.io
+    state: present
+  become: yes
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Make containerd directory
+  file:
+    path: "/etc/containerd"
+    state: directory
+  become: true
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Configure containerd
+  shell: "containerd config default > /etc/containerd/config.toml"
+  become: true
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+
+#- name: Enable systemd cgroup
+#  replace:
+#    path: /etc/containerd/config.toml
+#    regexp: 'systemd_cgroup = false'
+#    replace: 'systemd_cgroup = true'
+#  become: true
+#  when:
+#    - ('Controller' in group_names) or ('Worker' in group_names)
+
+- name: Restart containerd
+  systemd:
+    name: containerd
+    state: restarted
+    enabled: true
+  become: true
+  when:
+    - ('Controller' in group_names) or ('Worker' in group_names)
+   

@@ -1,0 +1,53 @@
+- name: Make k8s directory
+  connection: local
+  file:
+    path: "~/k8s"
+    state: directory
+  when:
+    - "'Client' in group_names "
+
+- name: Download cfssl & cfssljosn
+  connection: local
+  get_url:
+    url: "{{ item }}"
+    dest: "~/k8s"
+    mode: 0775
+  with_items:
+    - "https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/{{ v_cfssl_version }}/linux/cfssl"
+    - "https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/{{ v_cfssl_version }}/linux/cfssljson"
+  when:
+    - "'Client' in group_names "
+
+- name: Copy cfssl & cfssljson
+  connection: local
+  copy:
+    src: "/home/vagrant/k8s/{{ item }}"
+    dest: "/usr/local/bin"
+    follow: yes
+    mode: 0775
+  become: yes
+  with_items:
+    - "cfssl"
+    - "cfssljson"
+  when:
+    - "'Client' in group_names "
+
+- name: Download kubectl
+  connection: local
+  get_url:
+    url: "https://storage.googleapis.com/kubernetes-release/release/v{{ v_kubernetes_version }}/bin/linux/amd64/kubectl"
+    dest: "~/k8s"
+    mode: 0775
+  when:
+    - "'Client' in group_names "
+
+- name: Copy kubectl
+  connection: local
+  copy:
+    src: "/home/vagrant/k8s/kubectl"
+    dest: "/usr/local/bin"
+    follow: yes
+    mode: 0775
+  become: yes
+  when:
+    - "'Client' in group_names "

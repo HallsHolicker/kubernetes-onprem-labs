@@ -1,0 +1,39 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+bootstrapTokens:
+- token: "{{ v_kubernetes_token }}"
+  ttl: "0" 
+nodeRegistration:
+  criSocket: "/run/containerd/containerd.sock"
+localAPIEndpoint:
+  advertiseAddress: "{{ v_external_ip }}"
+  bindPort: 6443
+certificateKey: "{{ v_kubernetes_certificaet_key }}"
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: stable
+apiServer:
+  certSANs:
+  - "{{ v_external_ip }}"
+  - "192.168.56.11"
+  - "192.168.56.12"
+  - "192.168.56.13"
+  - "10.0.2.15"
+controlPlaneEndpoint: "{{ v_external_ip }}:6443"
+networking:
+  podSubnet: "{{ v_cluster_cidr }}"
+  serviceSubnet: "{{ v_service_cluster_cidr }}"
+etcd:
+  external:
+    endpoints:
+    - "https://192.168.56.11:2379"
+    - "https://192.168.56.12:2379"
+    - "https://192.168.56.13:2379"
+    caFile: /etc/etcd/ca.crt
+    certFile: /etc/etcd/etcd.pem
+    keyFile: /etc/etcd/etcd-key.pem
+---
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+cgroupDriver: systemd

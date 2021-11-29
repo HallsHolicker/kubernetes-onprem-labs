@@ -1,0 +1,187 @@
+# Setting Keepalived
+- name: Install keepalived
+  dnf:
+    name: ["openssl-devel", "libnl3-devel", "keepalived"]
+    state: latest
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Config keepalived.conf
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: keepalived enable systemd
+  systemd:
+    name: keepalived
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+# Setting Haproxy
+- name: Install haproxy
+  dnf:
+    name: ["make", "gcc", "gcc-c++", "pcre-devel", "haproxy"]
+    state: latest
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Config haproxy.conf
+  copy:
+    src: haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Set sysctl net.ipv4.ip_nonlocal_bind
+  sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: 1
+    state: present
+    reload: yes
+  become: yes
+  when:
+    - "'Controller' in group_names"
+
+- name: haproxy enable systemd
+  systemd:
+    name: haproxy
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+
+# Install kubernetes
+
+- name: Add kubernetes repo
+  copy:
+    src: kubernetes.repo
+    dest: /etc/yum.repos.d
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Install kubeadm kubelet kubectl
+  dnf:
+    name: "{{ item }}"
+    state: present
+    disable_excludes: kubernetes
+  become: true
+  with_items:
+    - "kubeadm-{{ v_kubernetes_version }}"
+    - "kubelet-{{ v_kubernetes_version }}"
+    - "kubectl-{{ v_kubernetes_version }}"
+  when:
+    - "'Controller' in group_names"
+
+- name: Enable kubelet
+  systemd:
+    name: kubelet
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Make /etc/kubernetes/pki directory
+  file:
+    path: "/etc/kubernetes/pki"
+    state: directory
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Copy ca.crt ca.key to /etc/kubernetes/pki
+  copy:
+    src: "{{ v_user_home }}/{{ item }}"
+    dest: /etc/kubernetes/pki
+    remote_src: true
+  become: true
+  with_items:
+    - ca.crt
+    - ca.key
+  when:
+    - "'Controller' in group_names"
+
+
+- name: Create kubeadm-config.yaml
+  template:
+    src: kubeadm-config.yaml.j2
+    dest: "{{ v_user_home }}/kubeadm-config.yaml"
+  when:
+    - "'Controller' in group_names"
+
+- name: Pull image kubernetes controller
+  shell: 'kubeadm config images pull'
+  become: true
+  when:
+    - "'Controller' in group_names"
+
+- name: Initialize kubernetes
+  command: "kubeadm init --upload-certs --config /{{ v_user_home }}/kubeadm-config.yaml"
+  become: true
+  register: kubeadm_init
+  when:
+    - "'192.168.56.11' in inventory_hostname"
+
+- name: fetch admin.conf remote to local
+  fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/admin.conf
+    flat: true
+  become: true
+  when:
+    - "'192.168.56.11' in inventory_hostname"
+
+- name: Make $HOME/.kube directory
+  file:
+    path: "{{ v_user_home }}/.kube"
+    state: directory
+  when:
+    - ('Controller' in group_names) or ('Client' in group_names)
+
+- name: Copy admin.conf
+  copy:
+    src: ~/admin.conf
+    dest: "{{ v_user_home }}/.kube/config"
+    owner: vagrant
+    group: vagrant
+  become: true
+  when:
+    - ('Controller' in group_names) or ('Client' in group_names)
+
+- name: Delete admin.conf at ansible files
+  connection: local 
+  file:
+    path: ~/admin.conf
+    state: absent
+  when:
+    - "'Client' in group_names"
+
+- name: Get discovery token ca cert hash
+  shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'"
+  become: true
+  register: get_discovery_token_ca_cert_hash
+  when:
+    - "'Controller' in group_names"
+    - "'192.168.56.11' not in inventory_hostname"
+
+- name: Join kubernetes Controller
+  shell: "kubeadm join {{ v_external_ip }}:6443 --token {{ v_kubernetes_token }} --discovery-token-ca-cert-hash sha256:{{ get_discovery_token_ca_cert_hash.stdout }} --control-plane --certificate-key {{ v_kubernetes_certificaet_key }}"
+  become: true
+  when:
+    - "'Controller' in group_names"
+    - "'192.168.56.11' not in inventory_hostname"
