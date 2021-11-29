@@ -32,13 +32,6 @@ Calico Version check
           image: docker.io/calico/kube-controllers:v3.21.1
 ```
 
-
-Calico의 기본 cluster-cidr은 192.168.0.0/16입니다. 이번 실습에서는 10.200.0.0/16이므로 이 부분은 수정을 하도록 하겠습니다.
-
-```
-sed -i 's|# - name: CALICO_IPV4POOL_CIDR|- name: CALICO_IPV4POOL_CIDR|g' calico.yaml
-sed -i 's|#   value: "192.168.0.0/16"|  value: "10.200.0.0/16"|g' calico.yaml
-
 kubectl apply -f calico.yaml
 ```
 
