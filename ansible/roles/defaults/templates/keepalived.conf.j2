@@ -33,9 +33,9 @@ vrrp_instance HAProxy {
   }
   unicast_peer {
   
-    @^k8s-contoller-1 unicast_src_ip 192.168.56.11
-    @^k8s-contoller-2 unicast_src_ip 192.168.56.12
-    @^k8s-contoller-3 unicast_src_ip 192.168.56.13
+    @^k8s-contoller-1 192.168.56.11
+    @^k8s-contoller-2 192.168.56.12
+    @^k8s-contoller-3 192.168.56.13
   }
   virtual_ipaddress {
     {{ v_external_ip }}
