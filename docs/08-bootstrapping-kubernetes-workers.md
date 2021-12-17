@@ -24,7 +24,7 @@ kubernetes Repository 추가:
 cat << EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
-baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
 enabled=1
 gpgcheck=1
 repo_gpgcheck=1
@@ -38,7 +38,7 @@ EOF
 Kubernetes 설치:
 
 ```
-sudo dnf -y install kubeadm-1.22.4 kubelet-1.22.4 kubectl-1.22.4
+sudo dnf -y install kubeadm-1.22.4 kubelet-1.22.4 kubectl-1.22.4 --disableexcludes=kubernetes
 ```
 
 ### Start kubelet

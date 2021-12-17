@@ -32,6 +32,7 @@ Calico Version check
           image: docker.io/calico/kube-controllers:v3.21.1
 ```
 
+```
 kubectl apply -f calico.yaml
 ```
 
